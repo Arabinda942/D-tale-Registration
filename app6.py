@@ -274,5 +274,26 @@ if st.session_state.logged_in:
             "students_data.csv",
             "text/csv"
         )
+
+        # -------------------- DELETE STUDENT --------------------
+        st.subheader("Delete Student Record")
+
+        reg_id_to_delete = st.text_input("Enter Registration ID to delete")
+
+        confirm = st.checkbox("I confirm deletion")
+
+        if st.button("Delete Record"):
+            if not confirm:
+                st.warning("Please confirm deletion")
+            else:
+                df = pd.read_csv(DATA_FILE)
+
+                if reg_id_to_delete in df["Reg ID"].values:
+                    df = df[df["Reg ID"] != reg_id_to_delete]
+                    df.to_csv(DATA_FILE, index=False)
+                    st.success(f"Record {reg_id_to_delete} deleted successfully")
+                else:
+                    st.error("Registration ID not found")
+
 else:
     st.sidebar.info("Login to view student data")
