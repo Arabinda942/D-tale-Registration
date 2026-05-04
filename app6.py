@@ -97,6 +97,8 @@ def generate_pdf(data):
     student_name = data["Name"]
     student_class = data["Class"]
 
+    first_name = student_name.strip().split()[0]
+
     welcome_text = f"""
     Dear {student_name},<br/><br/>
 
@@ -105,8 +107,8 @@ def generate_pdf(data):
     We are pleased to have you enrolled in {student_class}. Your registration has been successfully completed. We are committed to supporting your learning journey and helping you achieve your academic goals.<br/><br/>
 
     Your login credentials are as follows:<br/>
-    User ID: {student_name}<br/>
-    Password: {student_name}@007<br/><br/>
+    User ID: {first_name}<br/>
+    Password: {first_name}@007<br/><br/>
 
     We look forward to a productive and successful learning experience with you.<br/><br/>
 
