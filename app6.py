@@ -306,6 +306,7 @@ if st.session_state.student_logged_in:
         st.markdown(f"### Fee Status: {status}")
         st.dataframe(student_data)
 
+
 # -------------------- ADMIN --------------------
 st.sidebar.title("Admin Login")
 
@@ -322,5 +323,37 @@ if not st.session_state.logged_in:
 else:
     st.sidebar.success("Admin Active")
 
+# -------------------- ADMIN PANEL CONTROLS --------------------
 if st.session_state.logged_in:
-    st.dataframe(df, use_container_width=True)
+
+    show_data = st.sidebar.checkbox("Show All Students")
+
+    if show_data:
+        st.subheader("All Student Records")
+        st.dataframe(df, use_container_width=True)
+
+        st.download_button(
+            "Download Data",
+            df.to_csv(index=False),
+            "students_data.csv",
+            "text/csv"
+        )
+
+        st.divider()
+
+        # ---------------- DELETE SECTION ----------------
+        st.subheader("Delete Student Record")
+
+        reg_id_to_delete = st.text_input("Enter Registration ID to Delete")
+        confirm_delete = st.checkbox("I confirm deletion")
+
+        if st.button("Delete Record"):
+            if confirm_delete:
+                if reg_id_to_delete in df["Reg ID"].values:
+                    df = df[df["Reg ID"] != reg_id_to_delete]
+                    df.to_csv(DATA_FILE, index=False)
+                    st.success(f"Record {reg_id_to_delete} deleted successfully")
+                else:
+                    st.error("Registration ID not found")
+            else:
+                st.warning("Please confirm deletion first")
