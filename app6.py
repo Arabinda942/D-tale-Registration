@@ -73,10 +73,6 @@ def generate_reg_id():
 
     return reg_id
 
-# -------------------- PREVIEW ID --------------------
-if "preview_reg_id" not in st.session_state:
-    st.session_state.preview_reg_id = generate_reg_id()
-
 # -------------------- PDF --------------------
 def generate_pdf(data):
     filename = f"{data['Reg ID']}.pdf"
@@ -216,7 +212,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------- SUBMIT --------------------
 if submit:
-    reg_id = st.session_state.preview_reg_id
+    reg_id = generate_reg_id()
 
     record = {
         "Reg ID": reg_id,
