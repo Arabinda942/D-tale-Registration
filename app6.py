@@ -6,6 +6,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
+import calendar
 
 # -------------------- CONFIG --------------------
 st.set_page_config(page_title="D'tale Learning Center", layout="wide")
@@ -30,48 +31,53 @@ st.markdown("""
 
 DATA_FILE = "registrations.csv"
 RECEIPT_FOLDER = "receipts"
-
 os.makedirs(RECEIPT_FOLDER, exist_ok=True)
 
-# -------------------- ADMIN LOGIN --------------------
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "Arabinda@1234"
-
+# -------------------- SESSION --------------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-# -------------------- INIT DATA --------------------
+if "student_logged_in" not in st.session_state:
+    st.session_state.student_logged_in = False
+
+# -------------------- ADMIN --------------------
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "Arabinda@1234"
+
+# -------------------- DATA INIT --------------------
 if not os.path.exists(DATA_FILE):
     df = pd.DataFrame(columns=[
         "Reg ID","Name","DOB","Gender","Phone","Email","Address",
         "Class","Institution","Board",
         "Course","Mode","Batch",
         "Guardian Name","Guardian Phone","Relation",
-        "Fee Submitted","Amount","Payment Mode","Transaction ID","Payment Date"
+        "Fee Submitted","Amount","Payment Mode","Transaction ID","Payment Date",
+        "Username","Password",
+        "Fee Month"
     ])
     df.to_csv(DATA_FILE, index=False)
 
 # -------------------- REG ID --------------------
 COUNTER_FILE = "counter.txt"
 
-# create counter file if not exists
 if not os.path.exists(COUNTER_FILE):
     with open(COUNTER_FILE, "w") as f:
         f.write("1")
 
 def generate_reg_id():
-    # read current counter
     with open(COUNTER_FILE, "r") as f:
         num = int(f.read().strip())
 
-    # create ID
     reg_id = f"DL-2026-{str(num).zfill(3)}"
 
-    # update counter
     with open(COUNTER_FILE, "w") as f:
         f.write(str(num + 1))
 
     return reg_id
+
+# -------------------- NAME --------------------
+def get_first_name(full_name):
+    return full_name.strip().split(" ")[0]
 
 # -------------------- PDF --------------------
 def generate_pdf(data):
@@ -87,6 +93,31 @@ def generate_pdf(data):
     content.append(Paragraph("Registration Receipt (FY 2026–27)", styles['Heading2']))
     content.append(Spacer(1, 15))
 
+    # ---------------- WELCOME LETTER (MERGED FINAL VERSION) ----------------
+    student_name = data["Name"]
+    student_class = data["Class"]
+
+    welcome_text = f"""
+    Dear {student_name},<br/><br/>
+
+    Welcome to D'tale Learning Center.<br/><br/>
+
+    We are pleased to have you enrolled in Class {student_class}. Your registration has been successfully completed. We are committed to supporting your learning journey and helping you achieve your academic goals.<br/><br/>
+
+    Your login credentials are as follows:<br/>
+    User ID: {student_name}<br/>
+    Password: {student_name}@007<br/><br/>
+
+    We look forward to a productive and successful learning experience with you.<br/><br/>
+
+    Warm regards,<br/>
+    D'tale Learning Center
+    """
+
+    content.append(Paragraph(welcome_text, styles['Normal']))
+    content.append(Spacer(1, 15))
+
+    # ---------------- STUDENT TABLE ----------------
     table_data = [
         ["Registration ID", data["Reg ID"]],
         ["Name", data["Name"]],
@@ -106,12 +137,14 @@ def generate_pdf(data):
     content.append(table)
     content.append(Spacer(1, 15))
 
+    # ---------------- PAYMENT TABLE ----------------
     fee_data = [
         ["Description", "Details"],
         ["Registration Fee", data["Amount"]],
         ["Payment Mode", data["Payment Mode"]],
         ["Transaction ID", data["Transaction ID"]],
         ["Status", data["Fee Submitted"]],
+        ["Fee Month", data["Fee Month"]]
     ]
 
     fee_table = Table(fee_data, colWidths=[250, 210])
@@ -126,7 +159,6 @@ def generate_pdf(data):
 
     content.append(Paragraph(f"Date: {datetime.now().strftime('%d-%m-%Y')}", styles['Normal']))
     content.append(Spacer(1, 30))
-    content.append(Paragraph("Authorized Signature", styles['Normal']))
 
     doc.build(content)
     return filepath
@@ -140,13 +172,7 @@ st.divider()
 st.markdown('<div class="main-card">', unsafe_allow_html=True)
 
 name = st.text_input("Full Name")
-from datetime import date
-
-dob = st.date_input(
-    "Date of Birth",
-    min_value=date(1900, 1, 1),
-    max_value=date.today()
-)
+dob = st.date_input("Date of Birth", min_value=date(1900, 1, 1), max_value=date.today())
 gender = st.selectbox("Gender", ["Male","Female","Other"])
 phone = st.text_input("Phone")
 email = st.text_input("Email")
@@ -176,31 +202,22 @@ relation = st.text_input("Relation")
 fee_submitted = st.radio("Registration Fee Submitted", ["Yes","No"])
 amount = st.text_input("Amount")
 
-# -------------------- PAYMENT (NOW INSIDE) --------------------
 txn_id = ""
 payment_mode = "Cash"
 payment_date = date.today()
+current_month = datetime.now().strftime("%B %Y")
 
 if fee_submitted == "No":
-
-    st.subheader("Payment Section")
-
     payment_mode = st.selectbox("Payment Mode", ["Cash", "UPI"])
 
     if payment_mode == "UPI":
-        st.info("Scan the QR to pay")
-
+        st.info("Scan QR to pay")
         qr_path = os.path.join(os.getcwd(), "qr.jpeg")
-
         if os.path.exists(qr_path):
             st.image(qr_path, width=220)
-        else:
-            st.error("qr.jpeg not found")
-
         txn_id = st.text_input("Enter UPI Transaction ID")
-
     else:
-        txn_id = st.text_input("Transaction ID (optional)")
+        txn_id = st.text_input("Transaction ID")
 
     payment_date = st.date_input("Payment Date", value=date.today())
 
@@ -211,6 +228,10 @@ st.markdown('</div>', unsafe_allow_html=True)
 # -------------------- SUBMIT --------------------
 if submit:
     reg_id = generate_reg_id()
+
+    first_name = get_first_name(name)
+    username = first_name
+    password = f"{first_name}@007"
 
     record = {
         "Reg ID": reg_id,
@@ -233,73 +254,73 @@ if submit:
         "Amount": amount,
         "Payment Mode": payment_mode,
         "Transaction ID": txn_id,
-        "Payment Date": payment_date
+        "Payment Date": payment_date,
+        "Username": username,
+        "Password": password,
+        "Fee Month": current_month
     }
 
     df = pd.read_csv(DATA_FILE)
     df = pd.concat([df, pd.DataFrame([record])], ignore_index=True)
     df.to_csv(DATA_FILE, index=False)
 
-
     pdf_path = generate_pdf(record)
 
-    st.success(f"Submitted Successfully! Your Registration ID: {reg_id}")
+    st.success(f"Submitted Successfully! Your ID: {reg_id}")
+    st.info(f"Login → {username} / {password}")
 
     with open(pdf_path, "rb") as f:
         st.download_button("Download Receipt", f, file_name=f"{reg_id}.pdf")
 
-# -------------------- LOGIN --------------------
+# -------------------- STUDENT LOGIN --------------------
+st.sidebar.title("Student Login")
+
+df = pd.read_csv(DATA_FILE)
+
+if not st.session_state.student_logged_in:
+    s_user = st.sidebar.text_input("Student Username")
+    s_pass = st.sidebar.text_input("Password", type="password")
+
+    if st.sidebar.button("Login as Student"):
+        match = df[(df["Username"] == s_user) & (df["Password"] == s_pass)]
+
+        if not match.empty:
+            st.session_state.student_logged_in = True
+            st.session_state.student_user = s_user
+            st.sidebar.success("Student Logged In")
+        else:
+            st.sidebar.error("Invalid Student Credentials")
+else:
+    st.sidebar.success("Student Active")
+
+# -------------------- DASHBOARD --------------------
+if st.session_state.student_logged_in:
+    st.subheader("Student Dashboard")
+
+    student_data = df[df["Username"] == st.session_state.student_user]
+
+    if not student_data.empty:
+        latest = student_data.iloc[-1]
+        status = "PAID" if latest["Fee Submitted"] == "Yes" else "DUE"
+
+        st.markdown(f"### Fee Status: {status}")
+        st.dataframe(student_data)
+
+# -------------------- ADMIN --------------------
 st.sidebar.title("Admin Login")
 
 if not st.session_state.logged_in:
-    username = st.sidebar.text_input("Username")
-    password = st.sidebar.text_input("Password", type="password")
+    username = st.sidebar.text_input("Admin Username")
+    password = st.sidebar.text_input("Admin Password", type="password")
 
-    if st.sidebar.button("Login"):
+    if st.sidebar.button("Login Admin"):
         if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
             st.session_state.logged_in = True
-            st.sidebar.success("Logged in")
+            st.sidebar.success("Admin Logged In")
         else:
             st.sidebar.error("Invalid credentials")
 else:
-    st.sidebar.success("Admin Logged In")
-    if st.sidebar.button("Logout"):
-        st.session_state.logged_in = False
-
-# -------------------- ADMIN PANEL --------------------
-st.sidebar.title("Admin Panel")
+    st.sidebar.success("Admin Active")
 
 if st.session_state.logged_in:
-    if st.sidebar.checkbox("Show All Student Data"):
-        df = pd.read_csv(DATA_FILE)
-        st.dataframe(df, use_container_width=True)
-
-        st.download_button(
-            "Download All Data",
-            df.to_csv(index=False),
-            "students_data.csv",
-            "text/csv"
-        )
-
-        # -------------------- DELETE STUDENT --------------------
-        st.subheader("Delete Student Record")
-
-        reg_id_to_delete = st.text_input("Enter Registration ID to delete")
-
-        confirm = st.checkbox("I confirm deletion")
-
-        if st.button("Delete Record"):
-            if not confirm:
-                st.warning("Please confirm deletion")
-            else:
-                df = pd.read_csv(DATA_FILE)
-
-                if reg_id_to_delete in df["Reg ID"].values:
-                    df = df[df["Reg ID"] != reg_id_to_delete]
-                    df.to_csv(DATA_FILE, index=False)
-                    st.success(f"Record {reg_id_to_delete} deleted successfully")
-                else:
-                    st.error("Registration ID not found")
-
-else:
-    st.sidebar.info("Login to view student data")
+    st.dataframe(df, use_container_width=True)
