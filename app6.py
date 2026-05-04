@@ -133,7 +133,12 @@ st.markdown('<div class="main-card">', unsafe_allow_html=True)
 st.info(f"Registration ID: {st.session_state.preview_reg_id}")
 
 name = st.text_input("Full Name")
-dob = st.date_input("Date of Birth")
+dob = st.date_input
+(
+    "Date of Birth",
+    min_value=date(1900, 1, 1),
+    max_value=date.today()
+)
 gender = st.selectbox("Gender", ["Male","Female","Other"])
 phone = st.text_input("Phone")
 email = st.text_input("Email")
