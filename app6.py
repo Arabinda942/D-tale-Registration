@@ -52,13 +52,26 @@ if not os.path.exists(DATA_FILE):
     df.to_csv(DATA_FILE, index=False)
 
 # -------------------- REG ID --------------------
+COUNTER_FILE = "counter.txt"
+
+# create counter file if not exists
+if not os.path.exists(COUNTER_FILE):
+    with open(COUNTER_FILE, "w") as f:
+        f.write("1")
+
 def generate_reg_id():
-    df = pd.read_csv(DATA_FILE)
-    if len(df) == 0:
-        return "DL-2026-001"
-    last_id = df.iloc[-1]["Reg ID"]
-    num = int(last_id.split("-")[-1]) + 1
-    return f"DL-2026-{str(num).zfill(3)}"
+    # read current counter
+    with open(COUNTER_FILE, "r") as f:
+        num = int(f.read().strip())
+
+    # create ID
+    reg_id = f"DL-2026-{str(num).zfill(3)}"
+
+    # update counter
+    with open(COUNTER_FILE, "w") as f:
+        f.write(str(num + 1))
+
+    return reg_id
 
 # -------------------- PREVIEW ID --------------------
 if "preview_reg_id" not in st.session_state:
