@@ -139,8 +139,6 @@ st.divider()
 # -------------------- FORM --------------------
 st.markdown('<div class="main-card">', unsafe_allow_html=True)
 
-st.info(f"Registration ID: {st.session_state.preview_reg_id}")
-
 name = st.text_input("Full Name")
 from datetime import date
 
@@ -242,7 +240,6 @@ if submit:
     df = pd.concat([df, pd.DataFrame([record])], ignore_index=True)
     df.to_csv(DATA_FILE, index=False)
 
-    st.session_state.preview_reg_id = generate_reg_id()
 
     pdf_path = generate_pdf(record)
 
