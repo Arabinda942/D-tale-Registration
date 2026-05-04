@@ -133,8 +133,9 @@ st.markdown('<div class="main-card">', unsafe_allow_html=True)
 st.info(f"Registration ID: {st.session_state.preview_reg_id}")
 
 name = st.text_input("Full Name")
-dob = st.date_input
-(
+from datetime import date
+
+dob = st.date_input(
     "Date of Birth",
     min_value=date(1900, 1, 1),
     max_value=date.today()
