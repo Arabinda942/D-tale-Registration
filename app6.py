@@ -102,7 +102,7 @@ def generate_pdf(data):
 
     Welcome to D'tale Learning Center.<br/><br/>
 
-    We are pleased to have you enrolled in Class {student_class}. Your registration has been successfully completed. We are committed to supporting your learning journey and helping you achieve your academic goals.<br/><br/>
+    We are pleased to have you enrolled in {student_class}. Your registration has been successfully completed. We are committed to supporting your learning journey and helping you achieve your academic goals.<br/><br/>
 
     Your login credentials are as follows:<br/>
     User ID: {student_name}<br/>
